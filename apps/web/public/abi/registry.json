@@ -1,0 +1,25 @@
+{
+  "version": "0.1.0",
+  "networks": {
+    "base": {
+      "chainId": 8453,
+      "contracts": {
+        "underwritingCore": {
+          "address": "0x0000000000000000000000000000000000000000",
+          "abi": "/abi/base-underwriting-core.json"
+        },
+        "stakeVault": {
+          "address": "0x0000000000000000000000000000000000000000",
+          "abi": "/abi/base-stake-vault.json"
+        }
+      }
+    },
+    "goat": {
+      "chainId": 0,
+      "contracts": {}
+    },
+    "solana": {
+      "program": "TBD"
+    }
+  }
+}

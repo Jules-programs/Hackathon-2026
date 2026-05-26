@@ -1,0 +1,92 @@
+openapi: 3.1.0
+info:
+  title: Novae Rog Agent API
+  version: 0.1.0
+  description: API surface for quote retrieval, coverage purchase, and claim filing.
+servers:
+  - url: http://localhost:8787
+tags:
+  - name: tools
+    description: Agent-discoverable underwriting and claims endpoints
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        '200':
+          description: Service heartbeat
+  /tools:
+    get:
+      summary: List available tools
+      tags: [tools]
+      responses:
+        '200':
+          description: Tool list
+  /tools/get_underwriting_quote:
+    post:
+      summary: Get underwriting quote
+      tags: [tools]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [targetContract, coveredAmount, token, chain]
+              properties:
+                targetContract:
+                  type: string
+                coveredAmount:
+                  type: number
+                token:
+                  type: string
+                  enum: [USDC, USDT, WBTC, BTC]
+                chain:
+                  type: string
+                  enum: [base, goat, solana]
+      responses:
+        '200':
+          description: Quote
+  /tools/purchase_cover:
+    post:
+      summary: Activate coverage
+      tags: [tools]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [quoteId, paymentTxHash, buyerWallet]
+              properties:
+                quoteId:
+                  type: string
+                paymentTxHash:
+                  type: string
+                buyerWallet:
+                  type: string
+      responses:
+        '200':
+          description: Policy activation status
+  /tools/file_transaction_claim:
+    post:
+      summary: File transaction claim
+      tags: [tools]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [txHash, reporterWallet]
+              properties:
+                txHash:
+                  type: string
+                evidenceUri:
+                  type: string
+                  format: uri
+                reporterWallet:
+                  type: string
+      responses:
+        '200':
+          description: Claim acceptance status

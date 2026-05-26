@@ -1,0 +1,35 @@
+{
+  "name": "Novae Rog",
+  "category": "Agent Risk Management",
+  "description": "Programmatic transaction underwriting and claims assurance for autonomous agents and merchant rails.",
+  "version": "0.1.0",
+  "mcp": {
+    "endpoint": "http://localhost:8787",
+    "tools": [
+      "get_underwriting_quote",
+      "purchase_cover",
+      "file_transaction_claim"
+    ]
+  },
+  "deployments": {
+    "base": {
+      "underwritingCore": "0x0000000000000000000000000000000000000000",
+      "stakeVault": "0x0000000000000000000000000000000000000000"
+    },
+    "goat": {
+      "underwritingCore": "TBD",
+      "stakeVault": "TBD"
+    },
+    "solana": {
+      "program": "TBD"
+    }
+  },
+  "abiRegistry": "/abi/registry.json",
+  "openapi": "/docs/openapi.yaml",
+  "capabilities": [
+    "underwriting-quotes",
+    "coverage-purchase",
+    "transaction-claims",
+    "eip712-signing"
+  ]
+}

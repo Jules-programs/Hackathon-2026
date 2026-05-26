@@ -1,0 +1,89 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --bg: #05070c;
+  --card: rgba(10, 16, 26, 0.72);
+  --line: rgba(122, 255, 206, 0.24);
+  --mint: #7affce;
+  --amber: #ffd166;
+  --signal: #ff4d6d;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  color: #eafbf7;
+  font-family: "Space Grotesk", sans-serif;
+  background:
+    radial-gradient(circle at 15% 10%, rgba(122, 255, 206, 0.18), transparent 32%),
+    radial-gradient(circle at 80% 8%, rgba(255, 209, 102, 0.18), transparent 28%),
+    linear-gradient(170deg, #05070c, #090f1a 55%, #070b13 100%);
+  min-height: 100vh;
+}
+
+a {
+  color: inherit;
+}
+
+input,
+select,
+textarea {
+  width: 100%;
+  border-radius: 10px;
+  border: 1px solid var(--line);
+  background: rgba(3, 7, 12, 0.7);
+  color: #eafbf7;
+  padding: 0.6rem 0.75rem;
+}
+
+input:focus,
+select:focus,
+textarea:focus {
+  outline: 1px solid rgba(122, 255, 206, 0.7);
+}
+
+button:disabled {
+  opacity: 0.58;
+  cursor: not-allowed;
+}
+
+.glass {
+  background: var(--card);
+  border: 1px solid var(--line);
+  backdrop-filter: blur(12px);
+  border-radius: 16px;
+  box-shadow: 0 8px 28px rgba(0, 0, 0, 0.28);
+}
+
+.metric-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 1rem;
+}
+
+.panel-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+  gap: 1rem;
+}
+
+.node-glow {
+  animation: pulse 2.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%,
+  100% {
+    transform: scale(1);
+    box-shadow: 0 0 0 rgba(122, 255, 206, 0.1);
+  }
+  50% {
+    transform: scale(1.03);
+    box-shadow: 0 0 28px rgba(122, 255, 206, 0.2);
+  }
+}
