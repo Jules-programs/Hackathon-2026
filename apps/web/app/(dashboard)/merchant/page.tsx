@@ -3,13 +3,14 @@
 import { useEffect, useState } from "react";
 import { createQuoteTypedData } from "@novae-rog/shared/schemas";
 import { MetricCard } from "@/components/MetricCard";
-import { getUnderwritingQuote, purchaseCover } from "@/lib/mcp-client";
-import { getWalletState, signTypedData } from "@/lib/wallet";
+import { evaluateSettlementPath, getUnderwritingQuote, purchaseCover } from "@/lib/mcp-client";
+import { getWalletState, signMessage, signTypedData } from "@/lib/wallet";
 
 export default function MerchantPage() {
   const [collateralLocked, setCollateralLocked] = useState(180000);
   const [collateralThreshold] = useState(150000);
   const [quoteId, setQuoteId] = useState<string>("");
+  const [policyId, setPolicyId] = useState<string>("");
   const [paymentTxHash, setPaymentTxHash] = useState("0x");
   const [chain, setChain] = useState<"base" | "goat" | "solana">("base");
   const [contractAddress, setContractAddress] = useState("0x0000000000000000000000000000000000000000");
@@ -18,6 +19,8 @@ export default function MerchantPage() {
   const [status, setStatus] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [typedSig, setTypedSig] = useState<string | null>(null);
+  const [evaluatedTrustScore, setEvaluatedTrustScore] = useState<number | null>(null);
+  const [settlementPath, setSettlementPath] = useState<string>("syndicate_backed_t0");
   const [graceEnd] = useState(Date.now() + 48 * 60 * 60 * 1000);
   const [now, setNow] = useState(Date.now());
 
@@ -29,8 +32,9 @@ export default function MerchantPage() {
   const graceRemainingMs = Math.max(0, graceEnd - now);
   const graceHours = Math.floor(graceRemainingMs / (60 * 60 * 1000));
   const graceMinutes = Math.floor((graceRemainingMs % (60 * 60 * 1000)) / (60 * 1000));
-  const trustScore = Math.max(50, Math.min(99, Math.round(70 + (collateralLocked / collateralThreshold) * 10)));
-  const premiumRate = collateralLocked >= collateralThreshold ? 0.8 : 5;
+  const fallbackTrustScore = Math.max(50, Math.min(99, Math.round(70 + (collateralLocked / collateralThreshold) * 10)));
+  const trustScore = evaluatedTrustScore ?? fallbackTrustScore;
+  const premiumRate = settlementPath === "instant_t0" ? 0.8 : settlementPath === "syndicate_backed_t0" ? 1.6 : 5;
 
   const integrationSnippet = `<NovaeRogShield\n  chain=\"${chain}\"\n  contractAddress=\"${contractAddress}\"\n  coveredAmount={${coveredAmount}}\n  currency=\"${currency}\"\n/>`;
 
@@ -45,12 +49,30 @@ export default function MerchantPage() {
         chain
       });
       setQuoteId(quote.quoteId);
+      setPolicyId(quote.policyId);
       setStatus(`Quote fetched: ${quote.premiumAmount} (${quote.premiumBps} bps)`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to get quote");
       setStatus(null);
     }
   }
+
+  async function refreshSettlementDecision() {
+    try {
+      const wallet = await getWalletState();
+      const merchantWallet = wallet.account ?? contractAddress;
+      const result = await evaluateSettlementPath({ merchantWallet, chain });
+      setEvaluatedTrustScore(result.trustScore);
+      setSettlementPath(result.settlementPath);
+    } catch {
+      setEvaluatedTrustScore(null);
+      setSettlementPath("standard_escrow_30d");
+    }
+  }
+
+  useEffect(() => {
+    void refreshSettlementDecision();
+  }, [chain]);
 
   async function activateCoverage() {
     setError(null);
@@ -63,11 +85,29 @@ export default function MerchantPage() {
       if (!quoteId) {
         throw new Error("Fetch a quote first");
       }
+      if (!policyId) {
+        throw new Error("Quote missing policyId. Request a new quote.");
+      }
+
+      const authNonce = crypto.randomUUID();
+      const authMessage = [
+        "NovaeRog PurchaseCover",
+        `quoteId:${quoteId}`,
+        `policyId:${policyId}`,
+        `paymentTxHash:${paymentTxHash}`,
+        `nonce:${authNonce}`
+      ].join("\n");
+      const authSignature = await signMessage(wallet.account, authMessage);
 
       const result = await purchaseCover({
         quoteId,
+        policyId,
+        paymentMemoPolicyId: policyId,
         paymentTxHash,
-        buyerWallet: wallet.account
+        buyerWallet: wallet.account,
+        authNonce,
+        authSignature,
+        authVersion: "v1"
       });
       setStatus(`Coverage ${result.status}. Policy: ${result.policyId}`);
     } catch (err) {
@@ -175,6 +215,9 @@ export default function MerchantPage() {
             <button type="button" onClick={() => void fetchQuote()} className="rounded-md border border-line px-4 py-2 text-sm hover:border-mint hover:text-mint">
               Get Premium Quote
             </button>
+            <button type="button" onClick={() => void refreshSettlementDecision()} className="rounded-md border border-line px-4 py-2 text-sm hover:border-mint hover:text-mint">
+              Refresh Settlement Path
+            </button>
             <button type="button" onClick={() => void signQuoteAgreement()} className="rounded-md border border-line px-4 py-2 text-sm hover:border-mint hover:text-mint">
               Sign EIP-712 Quote
             </button>
@@ -183,6 +226,7 @@ export default function MerchantPage() {
             </button>
           </div>
           {status ? <p className="mt-3 text-sm text-mint">{status}</p> : null}
+          <p className="mt-2 text-xs text-slate-400">Settlement Path: {settlementPath}</p>
           {error ? <p className="mt-2 text-sm text-signal">{error}</p> : null}
           {typedSig ? <p className="mt-2 break-all text-xs text-slate-300">Signature: {typedSig}</p> : null}
         </article>

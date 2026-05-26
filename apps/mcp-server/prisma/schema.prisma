@@ -1,0 +1,75 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+model Quote {
+  id             String   @id @default(cuid())
+  quoteId        String   @unique
+  policyId       String   @unique
+  targetContract String
+  coveredAmount  Float
+  token          String
+  chain          String
+  premiumBps     Int
+  premiumAmount  Float
+  gasSurcharge   Float
+  trustScore     Int
+  settlementPath String
+  expiresAt      DateTime
+  createdAt      DateTime @default(now())
+}
+
+model Policy {
+  id              String   @id @default(cuid())
+  policyId        String   @unique
+  quoteId         String   @unique
+  buyerWallet     String
+  chain           String
+  coveredAmount   Float
+  status          String
+  activatedAt     DateTime
+  expiresAt       DateTime
+  freezeStartedAt DateTime?
+  totalFrozenMs   Int      @default(0)
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Claim {
+  id               String   @id @default(cuid())
+  claimId          String   @unique
+  claimKey         String   @unique
+  policyId         String?
+  chainId          Int
+  txHash           String
+  claimAmountUsd   Float
+  reporterWallet   String
+  status           String
+  payoutMode       String
+  processedOnChain Boolean  @default(false)
+  submittedAt      DateTime
+  createdAt        DateTime @default(now())
+}
+
+model NonceUsage {
+  id          String   @id @default(cuid())
+  actorWallet String
+  action      String
+  nonce       String
+  signature   String
+  usedAt      DateTime @default(now())
+
+  @@unique([actorWallet, action, nonce])
+}
+
+model ChainOutage {
+  chain     String   @id
+  isOutage  Boolean  @default(false)
+  startedAt DateTime?
+  updatedAt DateTime @updatedAt
+}

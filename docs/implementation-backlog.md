@@ -8,6 +8,7 @@
 - [x] OpenAPI draft for core agent endpoints
 - [x] Injected wallet integration and signing (MetaMask/Rabby via EIP-1193)
 - [ ] Real on-chain data via indexer/event stream
+- [x] Prisma schema and persistence adapter scaffold (PostgreSQL + in-memory fallback)
 
 ## Sprint 2 - Human UI Critical Path
 
@@ -21,9 +22,13 @@
 ## Sprint 3 - Machine Interface Hardening
 
 - [x] MCP-style tool routes for quote/purchase/claim
+- [x] x402 policy memo mapping enforcement (`policyId` in purchase intent)
+- [x] Claim replay protection scaffold (deterministic claim key and duplicate rejection)
+- [x] Trust-score settlement pathway evaluation endpoint
 - [ ] Standard MCP protocol transport implementation
-- [ ] API keys, rate limits, and abuse controls
-- [ ] Nonce/replay and signature verification controls
+- [x] API keys, rate limits, and abuse controls
+- [x] Nonce/replay and signature verification controls
+- [x] RPC outage freeze/unfreeze administrative safeguard endpoint
 
 ## Sprint 4 - Demo and QA
 

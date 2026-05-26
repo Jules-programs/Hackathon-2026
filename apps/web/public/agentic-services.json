@@ -8,7 +8,9 @@
     "tools": [
       "get_underwriting_quote",
       "purchase_cover",
-      "file_transaction_claim"
+      "file_transaction_claim",
+      "evaluate_settlement_path",
+      "get_policy_status"
     ]
   },
   "deployments": {
@@ -30,6 +32,8 @@
     "underwriting-quotes",
     "coverage-purchase",
     "transaction-claims",
+    "merchant-settlement-path-evaluation",
+    "policy-expiry-freeze-status",
     "eip712-signing"
   ]
 }

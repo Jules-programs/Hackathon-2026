@@ -10,6 +10,11 @@ This repository bootstraps the implementation plan for the Novae Rog front-end a
 - `docs`: OpenAPI and implementation backlog
 - `abi`: Deployment and ABI registry pointers
 
+Key documents:
+- `docs/novae-rog-business-plan-srs.md`: Business plan and full functional/non-functional requirements baseline
+- `docs/implementation-backlog.md`: MVP implementation tracker
+- `docs/openapi.yaml`: API contract draft for machine interfaces
+
 ## Quick start
 
 1. Install dependencies:
@@ -17,10 +22,15 @@ This repository bootstraps the implementation plan for the Novae Rog front-end a
 2. Configure environment:
     - Copy `apps/web/.env.example` to `apps/web/.env.local`
     - Update `NEXT_PUBLIC_MCP_BASE_URL` if your MCP service is not running on `http://localhost:8787`
+   - (Optional) Copy `apps/mcp-server/.env.example` to `apps/mcp-server/.env` to enable API-key auth and PostgreSQL persistence
 2. Run the web app:
    - `npm run dev:web`
 3. Run the MCP service:
    - `npm run dev:mcp`
+
+MCP notes:
+- If `DATABASE_URL` is unset, MCP runs with in-memory storage.
+- If `MCP_API_KEYS` is set, all routes except `/health` require `x-api-key`.
 
 ## Functional dashboard flows
 

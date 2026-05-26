@@ -2,7 +2,9 @@ import {
   FileClaimRequest,
   PurchaseCoverRequest,
   QuoteRequest,
-  QuoteResponse
+  QuoteResponse,
+  SettlementPathRequest,
+  SettlementPathResponse
 } from "@novae-rog/shared/schemas";
 
 const baseUrl = process.env.NEXT_PUBLIC_MCP_BASE_URL ?? "http://localhost:8787";
@@ -35,7 +37,15 @@ export async function purchaseCover(input: PurchaseCoverRequest): Promise<{ stat
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input)
   });
-  return parseJson<{ status: string; policyId: string; activatedAt: string }>(response);
+  return parseJson<{
+    status: string;
+    policyId: string;
+    activatedAt: string;
+    expiresAt: string;
+    reservedCoverageUsd: number;
+    freeCapitalUsd: number;
+    paymentTxHash: string;
+  }>(response);
 }
 
 export async function fileTransactionClaim(input: FileClaimRequest): Promise<{ claimId: string; status: string; reviewWindowHours: number; submittedAt: string }> {
@@ -44,5 +54,22 @@ export async function fileTransactionClaim(input: FileClaimRequest): Promise<{ c
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify(input)
   });
-  return parseJson<{ claimId: string; status: string; reviewWindowHours: number; submittedAt: string }>(response);
+  return parseJson<{
+    claimId: string;
+    claimKey: string;
+    status: string;
+    payoutMode: "auto" | "manual_multisig";
+    processedOnChain: boolean;
+    reviewWindowHours: number;
+    submittedAt: string;
+  }>(response);
+}
+
+export async function evaluateSettlementPath(input: SettlementPathRequest): Promise<SettlementPathResponse> {
+  const response = await fetch(`${baseUrl}/tools/evaluate_settlement_path`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(input)
+  });
+  return parseJson<SettlementPathResponse>(response);
 }

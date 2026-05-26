@@ -8,6 +8,8 @@ import { getWalletState, signMessage } from "@/lib/wallet";
 export default function ExplorerPage() {
   const [stream, setStream] = useState(coverageStream);
   const [txHash, setTxHash] = useState("0x");
+  const [chainId, setChainId] = useState(8453);
+  const [claimAmountUsd, setClaimAmountUsd] = useState(1000);
   const [evidenceUri, setEvidenceUri] = useState("https://example.com/evidence");
   const [claimStatus, setClaimStatus] = useState<string | null>(null);
   const [auditSignature, setAuditSignature] = useState<string | null>(null);
@@ -42,10 +44,26 @@ export default function ExplorerPage() {
         throw new Error("Connect wallet first from top-right header");
       }
 
+      const authNonce = crypto.randomUUID();
+      const authMessage = [
+        "NovaeRog FileClaim",
+        `chainId:${chainId}`,
+        `txHash:${txHash}`,
+        `claimAmountUsd:${claimAmountUsd}`,
+        "policyId:",
+        `nonce:${authNonce}`
+      ].join("\n");
+      const authSignature = await signMessage(wallet.account, authMessage);
+
       const result = await fileTransactionClaim({
+        chainId,
         txHash,
+        claimAmountUsd,
         evidenceUri,
-        reporterWallet: wallet.account
+        reporterWallet: wallet.account,
+        authNonce,
+        authSignature,
+        authVersion: "v1"
       });
 
       setClaimStatus(`Claim ${result.claimId} queued with ${result.reviewWindowHours}h review window`);
@@ -114,7 +132,21 @@ export default function ExplorerPage() {
           <h3 className="text-lg font-semibold">Audit Multi-Sig Panel</h3>
           <p className="mt-2 text-sm text-slate-300">Claims above {highValueClaimThreshold} require signer review with AI verification logs and explorer proofs.</p>
           <div className="mt-3 grid grid-cols-1 gap-3">
+            <input
+              type="number"
+              min={0}
+              value={chainId}
+              onChange={(event) => setChainId(Number(event.target.value || 0))}
+              placeholder="Target chain ID"
+            />
             <input value={txHash} onChange={(event) => setTxHash(event.target.value)} placeholder="Claim transaction hash" />
+            <input
+              type="number"
+              min={1}
+              value={claimAmountUsd}
+              onChange={(event) => setClaimAmountUsd(Number(event.target.value || 0))}
+              placeholder="Claim amount (USD)"
+            />
             <input value={evidenceUri} onChange={(event) => setEvidenceUri(event.target.value)} placeholder="Evidence URI" />
           </div>
           <div className="mt-3 flex flex-wrap gap-2">

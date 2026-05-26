@@ -1,17 +1,28 @@
 openapi: 3.1.0
 info:
   title: Novae Rog Agent API
-  version: 0.1.0
-  description: API surface for quote retrieval, coverage purchase, and claim filing.
+  version: 0.2.0
+  description: API surface for quote retrieval, coverage purchase, claim filing, settlement path evaluation, and policy freeze controls.
 servers:
   - url: http://localhost:8787
 tags:
   - name: tools
     description: Agent-discoverable underwriting and claims endpoints
+  - name: admin
+    description: Operational control endpoints for outage safeguards
+components:
+  securitySchemes:
+    ApiKeyAuth:
+      type: apiKey
+      in: header
+      name: x-api-key
+security:
+  - ApiKeyAuth: []
 paths:
   /health:
     get:
       summary: Health check
+      security: []
       responses:
         '200':
           description: Service heartbeat
@@ -47,6 +58,32 @@ paths:
       responses:
         '200':
           description: Quote
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [quoteId, policyId, premiumBps, premiumAmount, gasSurcharge, expiresAt, reservationRatio, trustScore, settlementPath]
+                properties:
+                  quoteId:
+                    type: string
+                  policyId:
+                    type: string
+                  premiumBps:
+                    type: integer
+                  premiumAmount:
+                    type: number
+                  gasSurcharge:
+                    type: number
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  reservationRatio:
+                    type: number
+                  trustScore:
+                    type: integer
+                  settlementPath:
+                    type: string
+                    enum: [instant_t0, syndicate_backed_t0, standard_escrow_30d]
   /tools/purchase_cover:
     post:
       summary: Activate coverage
@@ -57,14 +94,25 @@ paths:
           application/json:
             schema:
               type: object
-              required: [quoteId, paymentTxHash, buyerWallet]
+              required: [quoteId, policyId, paymentMemoPolicyId, paymentTxHash, buyerWallet, authNonce, authSignature, authVersion]
               properties:
                 quoteId:
+                  type: string
+                policyId:
+                  type: string
+                paymentMemoPolicyId:
                   type: string
                 paymentTxHash:
                   type: string
                 buyerWallet:
                   type: string
+                authNonce:
+                  type: string
+                authSignature:
+                  type: string
+                authVersion:
+                  type: string
+                  enum: [v1]
       responses:
         '200':
           description: Policy activation status
@@ -78,15 +126,123 @@ paths:
           application/json:
             schema:
               type: object
-              required: [txHash, reporterWallet]
+              required: [chainId, txHash, claimAmountUsd, reporterWallet, authNonce, authSignature, authVersion]
               properties:
+                policyId:
+                  type: string
+                chainId:
+                  type: integer
                 txHash:
                   type: string
+                claimAmountUsd:
+                  type: number
                 evidenceUri:
                   type: string
                   format: uri
                 reporterWallet:
                   type: string
+                authNonce:
+                  type: string
+                authSignature:
+                  type: string
+                authVersion:
+                  type: string
+                  enum: [v1]
       responses:
         '200':
           description: Claim acceptance status
+  /tools/evaluate_settlement_path:
+    post:
+      summary: Evaluate merchant settlement pathway
+      tags: [tools]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [merchantWallet, chain]
+              properties:
+                merchantWallet:
+                  type: string
+                chain:
+                  type: string
+                  enum: [base, goat, solana]
+      responses:
+        '200':
+          description: Settlement pathway decision
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [merchantWallet, trustScore, settlementPath, premiumMultiplier, evaluatedAt]
+                properties:
+                  merchantWallet:
+                    type: string
+                  trustScore:
+                    type: integer
+                  settlementPath:
+                    type: string
+                    enum: [instant_t0, syndicate_backed_t0, standard_escrow_30d]
+                  premiumMultiplier:
+                    type: number
+                  evaluatedAt:
+                    type: string
+                    format: date-time
+  /tools/get_policy_status:
+    post:
+      summary: Get policy status and freeze metadata
+      tags: [tools]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [policyId]
+              properties:
+                policyId:
+                  type: string
+      responses:
+        '200':
+          description: Policy status
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [policyId, status, expiresAt, freezeStartedAt, totalFrozenMs]
+                properties:
+                  policyId:
+                    type: string
+                  status:
+                    type: string
+                    enum: [active, expired]
+                  expiresAt:
+                    type: string
+                    format: date-time
+                  freezeStartedAt:
+                    type: string
+                    format: date-time
+                    nullable: true
+                  totalFrozenMs:
+                    type: integer
+  /admin/set_rpc_outage:
+    post:
+      summary: Toggle RPC outage state and freeze or unfreeze active policy timers for a chain
+      tags: [admin]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [chain, isOutage]
+              properties:
+                chain:
+                  type: string
+                  enum: [base, goat, solana]
+                isOutage:
+                  type: boolean
+      responses:
+        '200':
+          description: Outage state updated
